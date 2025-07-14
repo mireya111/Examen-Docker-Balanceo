@@ -19,7 +19,7 @@ services:
   servidor2:
     container_name: Servidor22
     build: 
-     context: ./servidor1
+     context: ./servidor2
      dockerfile: Dockerfile
     ports:
       - 5002:5000
@@ -27,7 +27,7 @@ services:
       - MYSQL_HOST=maestro2
       - MYSQL_USER=root
       - MYSQL_PASSWORD=root
-      - MYSQL_Db=db_informacion
+      - MYSQL_DB=db_informacion
       - MYSQL_PORT=3306
     depends_on:
       - maestro2
@@ -45,11 +45,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: db_informacion
+      MYSQL_USER: replication
+      MYSQL_PASSWORD: replication_pass
     ports:
       - 3307:3306
-    command: --server-id=1 --log-bin=mysql-bin
+    command: --server-id=1 --log-bin=mysql-bin --binlog-do-db=db_informacion --replicate-ignore-db=mysql
     volumes:
       - db_master_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   maestro2:
     image: mysql:8.0
@@ -58,9 +61,11 @@ services:
       MYSQL_DATABASE: db_informacion
     ports:
       - 3308:3306
-    command: --server-id=2
+    command: --server-id=2 --relay-log=mysql-relay-bin --log-bin=mysql-bin --read-only=1
     volumes:
       - db_slave_data:/var/lib/mysql
+    depends_on:
+      - maestro1
 
   nginx:
     image: nginx:latest
