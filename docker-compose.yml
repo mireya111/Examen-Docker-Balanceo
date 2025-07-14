@@ -1,0 +1,80 @@
+version: '3'
+services:
+  servidor1:
+    container_name: Servidor11
+    build: 
+     context: ./servidor1
+     dockerfile: Dockerfile
+    ports:
+      - 5001:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_Db=db_informacion
+      - MYSQL_PORT=3306
+    depends_on:
+      - maestro1
+
+  servidor2:
+    container_name: Servidor22
+    build: 
+     context: ./servidor1
+     dockerfile: Dockerfile
+    ports:
+      - 5002:5000
+    environment:
+      - MYSQL_HOST=maestro2
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_Db=db_informacion
+      - MYSQL_PORT=3306
+    depends_on:
+      - maestro2
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      PMA_HOSTS: "maestro1,maestro2"
+      PMA_ARBITRARY: 1
+    ports:
+      - 8081:80
+
+  maestro1:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_informacion
+    ports:
+      - 3307:3306
+    command: --server-id=1 --log-bin=mysql-bin
+    volumes:
+      - db_master_data:/var/lib/mysql
+
+  maestro2:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_informacion
+    ports:
+      - 3308:3306
+    command: --server-id=2
+    volumes:
+      - db_slave_data:/var/lib/mysql
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - servidor1
+      - servidor2
+
+volumes:
+  db_master_data:
+  db_slave_data:
+
+
+
